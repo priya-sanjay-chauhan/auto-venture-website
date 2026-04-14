@@ -107,76 +107,7 @@ const ModelComparison = () => {
         </div>
       </div>
 
-      {/* BENCHMARK OVERVIEW */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '2rem', marginBottom: '3rem' }}>
-        
-        {/* Latency Chart */}
-        <div className="glass-panel" style={{ padding: '2rem' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-            <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <Clock size={20} color="var(--accent-primary)" />
-              Inference Speed (ms)
-            </h3>
-            <div style={{ background: 'var(--accent-success)', color: 'white', padding: '0.2rem 0.6rem', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 700 }}>
-              Fastest: {getWinnerLabel(latencyComparison.winner)}
-            </div>
-          </div>
-          <div style={{ height: '300px' }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={performanceData} layout="vertical" margin={{ left: 40, right: 30 }}>
-                <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="var(--border-color)" />
-                <XAxis type="number" hide />
-                <YAxis dataKey="name" type="category" stroke="var(--text-secondary)" fontSize={12} width={120} />
-                <Tooltip 
-                  cursor={{ fill: 'rgba(255,255,255,0.05)' }} 
-                  contentStyle={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '8px', color: 'white' }}
-                />
-                <Bar dataKey="latency" radius={[0, 4, 4, 0]} barSize={40}>
-                  {performanceData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
 
-        {/* Score Comparison */}
-        <div className="glass-panel" style={{ padding: '2rem' }}>
-          <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '2rem' }}>
-            <BarChart3 size={20} color="var(--accent-secondary)" />
-            Variance Analysis
-          </h3>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-             <div>
-               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                 <span style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Max Success Delta</span>
-                 <span style={{ fontWeight: 700, color: 'var(--accent-warning)' }}>±{scoreDifference.successScore}%</span>
-               </div>
-               <div style={{ height: '8px', background: 'var(--bg-tertiary)', borderRadius: '4px', overflow: 'hidden' }}>
-                 <div style={{ width: `${Math.min(100, (scoreDifference.successScore * 2))}%`, background: 'var(--accent-warning)', height: '100%' }} />
-               </div>
-             </div>
-             <div>
-               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                 <span style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Growth Index Drift</span>
-                 <span style={{ fontWeight: 700, color: 'var(--accent-primary)' }}>±{scoreDifference.growthScore}</span>
-               </div>
-               <div style={{ height: '8px', background: 'var(--bg-tertiary)', borderRadius: '4px', overflow: 'hidden' }}>
-                 <div style={{ width: `${Math.min(100, (scoreDifference.growthScore * 10))}%`, background: 'var(--accent-primary)', height: '100%' }} />
-               </div>
-             </div>
-          </div>
-          <div style={{ marginTop: '2.5rem', padding: '1rem', background: 'var(--bg-tertiary)', borderRadius: 'var(--radius-md)', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-             <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                <Activity size={14} color="var(--accent-success)" />
-                <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>Architecture Insight:</span>
-             </div>
-             LLMs capture semantic nuance while XGBoost focuses on tabular feature weighting. LSTM identifies sequential dependencies in your market field.
-          </div>
-        </div>
-
-      </div>
 
       {/* 3-WAY CARD VIEW */}
       <h2 style={{ marginBottom: '2rem', fontSize: '1.8rem' }}>Deep Architecture Breakdown</h2>
@@ -216,14 +147,7 @@ const ModelComparison = () => {
             </div>
           </div>
 
-          <button 
-            className="btn btn-primary" 
-            style={{ width: '100%', padding: '0.75rem', fontSize: '0.9rem' }}
-            onClick={() => handleSelectModel('llm')}
-          >
-            <CheckCircle2 size={16} />
-            Use Generative View
-          </button>
+
         </div>
 
         {/* XGBOOST CARD */}
@@ -260,14 +184,7 @@ const ModelComparison = () => {
             </div>
           </div>
 
-          <button 
-            className="btn btn-secondary" 
-            style={{ width: '100%', padding: '0.75rem', fontSize: '0.9rem', border: '1px solid var(--accent-warning)', background: 'transparent', color: 'var(--accent-warning)' }}
-            onClick={() => handleSelectModel('xgboost')}
-          >
-            <CheckCircle2 size={16} />
-            Use Tabular Mode
-          </button>
+
         </div>
 
         {/* LSTM CARD */}
@@ -304,14 +221,7 @@ const ModelComparison = () => {
             </div>
           </div>
 
-          <button 
-            className="btn btn-secondary" 
-            style={{ width: '100%', padding: '0.75rem', fontSize: '0.9rem', border: '1px solid var(--accent-primary)', background: 'transparent', color: 'var(--accent-primary)' }}
-            onClick={() => handleSelectModel('lstm')}
-          >
-            <CheckCircle2 size={16} />
-            Use Time-Series
-          </button>
+
         </div>
 
       </div>

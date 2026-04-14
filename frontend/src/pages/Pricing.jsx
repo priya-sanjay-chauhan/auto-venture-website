@@ -1,8 +1,17 @@
-import { Check, X, Shield, Zap, Sparkles } from 'lucide-react';
+import { Check, X, Shield, Zap, Sparkles, History, Trash2, ExternalLink } from 'lucide-react';
 import { useState } from 'react';
+import { useAppContext } from '../context/AppContext';
+import { useNavigate } from 'react-router-dom';
 
 const Pricing = () => {
   const [annual, setAnnual] = useState(true);
+  const { user, history, loadAnalysis, deleteAnalysis } = useAppContext();
+  const navigate = useNavigate();
+
+  const handleLoad = (id) => {
+    loadAnalysis(id);
+    navigate('/dashboard');
+  };
 
   const plans = [
     {
@@ -133,6 +142,59 @@ const Pricing = () => {
           </div>
         ))}
       </div>
+
+      {/* History section for logged-in users */}
+      {user && (
+        <section style={{ marginTop: '5rem', borderTop: '1px solid var(--border-color)', paddingTop: '4rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+             <div>
+                <h2 style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', margin: 0 }}>
+                   <History color="var(--accent-primary)" /> Analysis History
+                </h2>
+                <p style={{ color: 'var(--text-secondary)', marginTop: '0.4rem' }}>Your previous ventures and their stored analysis results.</p>
+             </div>
+             <button className="btn btn-secondary" style={{ fontSize: '0.85rem' }}>Download Data</button>
+          </div>
+
+          {history.length === 0 ? (
+            <div className="glass-panel" style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-tertiary)' }}>
+               No saved analyses found. Start your first analysis to see it here!
+            </div>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '1rem' }}>
+               {history.map(item => (
+                 <div key={item.id} className="glass-panel hover-row" style={{ padding: '1.25rem 1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', border: '1px solid var(--border-color)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', flex: 1 }}>
+                       <div style={{ 
+                         width: '40px', height: '40px', 
+                         background: 'rgba(99, 102, 241, 0.1)', 
+                         borderRadius: '8px', 
+                         display: 'flex', alignItems: 'center', justifyContent: 'center',
+                         color: 'var(--accent-primary)',
+                         fontWeight: 'bold'
+                       }}>
+                          {item.metrics?.successScore || '??'}
+                       </div>
+                       <div>
+                          <h4 style={{ margin: 0, fontSize: '1.05rem' }}>{item.inputs?.idea || 'Untitled Analysis'}</h4>
+                          <span style={{ fontSize: '0.8rem', color: 'var(--text-tertiary)' }}>{item.timestamp} • {item.inputs?.field || 'General'}</span>
+                       </div>
+                    </div>
+                    
+                    <div style={{ display: 'flex', gap: '0.75rem' }}>
+                       <button onClick={() => handleLoad(item.id)} className="btn btn-secondary" style={{ padding: '0.5rem 1rem', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                          <ExternalLink size={14} /> Resume
+                       </button>
+                       <button onClick={() => deleteAnalysis(item.id)} className="btn btn-secondary" style={{ padding: '0.5rem', color: 'var(--accent-danger)' }}>
+                          <Trash2 size={14} />
+                       </button>
+                    </div>
+                 </div>
+               ))}
+            </div>
+          )}
+        </section>
+      )}
     </div>
   );
 };

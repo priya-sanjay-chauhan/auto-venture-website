@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import {
   Home, Lightbulb, BarChart2, ShieldCheck, Truck,
-  Network, CreditCard, User, History, LogOut, Trash2, X, LayoutDashboard, Layers
+  Network, CreditCard, User, History, LogOut, Trash2, X, LayoutDashboard, Layers,
+  Terminal, GitBranch
 } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
 
@@ -12,20 +13,29 @@ const Sidebar = () => {
   const { user, history, loadAnalysis, deleteAnalysis, clearAllHistory, logout, currentAnalysis } = useAppContext();
   const [confirmClearAll, setConfirmClearAll] = useState(false);
 
-  const navItems = [
-    { name: 'Overview',          path: '/',            icon: <Home size={20} />             },
-    { name: 'Input Analysis',    path: '/analysis',    icon: <Lightbulb size={20} />        },
-    { name: 'Dashboard',         path: '/dashboard',   icon: <BarChart2 size={20} />        },
-    { name: 'OmniGuard',         path: '/omniguard',   icon: <ShieldCheck size={20} />      },
-    { name: 'Supply Chain',      path: '/supply-chain',icon: <Truck size={20} />            },
+  const hasAnalyzed = !!currentAnalysis;
+
+  const publicItems = [
+    { name: 'Intro (Home)',      path: '/',            icon: <Home size={20} />             },
+    { name: 'Start Analysis',    path: '/analysis',    icon: <Lightbulb size={20} />        },
+    { name: 'Pricing Plans',     path: '/pricing',     icon: <CreditCard size={20} />       },
+  ];
+
+  const analyzedItems = [
+    { name: 'Results Dashboard',  path: '/dashboard',   icon: <BarChart2 size={20} />        },
+    { name: 'OmniGuard Monitor', path: '/omniguard',   icon: <ShieldCheck size={20} />      },
+    { name: 'Supply Chain AI',   path: '/supply-chain',icon: <Truck size={20} />            },
     { name: 'Multi-Agents',      path: '/agents',      icon: <Network size={20} />          },
-    { name: 'Pricing',           path: '/pricing',     icon: <CreditCard size={20} />       },
-    { name: 'AI Control Panel',  path: '/ai-control',  icon: <LayoutDashboard size={20} />  },
+    { name: 'Engine Console',    path: '/ai-control',  icon: <LayoutDashboard size={20} />  },
+    { name: 'System Logs',       path: '/logs',        icon: <Terminal size={20} />         },
+    { name: 'CI/CD Pipeline',    path: '/cicd',        icon: <GitBranch size={20} />        },
   ];
 
   if (currentAnalysis?.isComparison) {
-    navItems.push({ name: 'Model Comparison', path: '/model-comparison', icon: <Layers size={20} /> });
+    analyzedItems.splice(1, 0, { name: 'Model Comparison', path: '/model-comparison', icon: <Layers size={20} /> });
   }
+
+  const navItems = hasAnalyzed ? [...publicItems, ...analyzedItems] : publicItems;
 
   const handleDelete = (e, id) => {
     e.stopPropagation(); // don't trigger loadAnalysis
@@ -97,9 +107,9 @@ const Sidebar = () => {
 
             {/* History items */}
             <div style={{ maxHeight: '160px', overflowY: 'auto' }}>
-              {history.slice(0, 8).map((h) => (
+              {history.slice(0, 8).map((h, i) => (
                 <div
-                  key={h.id}
+                  key={`${h.id}-${i}`}
                   style={{
                     display: 'flex',
                     alignItems: 'center',

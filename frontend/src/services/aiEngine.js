@@ -24,6 +24,13 @@ export const simulateAnalysis = async (inputs) => {
     
   } catch (err) {
     console.error('Frontend AI Service Error:', err);
+    
+    // If the error was thrown manually (e.g., from response.ok check above), re-throw it
+    // Otherwise, it's a network/connectivity error
+    if (err.message && !err.message.toLocaleLowerCase().includes('failed to fetch')) {
+       throw err; 
+    }
+    
     throw new Error(`Failed to connect to the backend AI server at ${BACKEND_URL}. Please make sure the server is running on port 5001.`);
   }
 };

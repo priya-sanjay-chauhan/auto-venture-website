@@ -239,7 +239,7 @@ const InputAnalysis = () => {
           
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div style={{ display: 'flex', gap: '1rem' }}>
-              {['LLM', 'XGBoost', 'LSTM'].map(m => (
+              {['LLM', 'XGBoost', 'LSTM', 'HYBRID'].map(m => (
                 <label key={m} style={{ 
                   display: 'flex', alignItems: 'center', gap: '0.5rem', 
                   padding: '0.75rem 1.25rem', 
