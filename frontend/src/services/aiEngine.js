@@ -2,7 +2,11 @@
 // Optimized for macOS and different browser environments
 
 // Dynamically match the backend URL to the current host (localhost or 127.0.0.1)
-const BACKEND_URL = `${window.location.protocol}//${window.location.hostname}:5001`;
+const BACKEND_URL =
+  process.env.NODE_ENV === "production"
+    ? "https://auto-venture-website.onrender.com"
+    : "http://localhost:5001";
+
 
 export const simulateAnalysis = async (inputs) => {
   try {
@@ -21,16 +25,16 @@ export const simulateAnalysis = async (inputs) => {
 
     const data = await response.json();
     return data;
-    
+
   } catch (err) {
     console.error('Frontend AI Service Error:', err);
-    
+
     // If the error was thrown manually (e.g., from response.ok check above), re-throw it
     // Otherwise, it's a network/connectivity error
     if (err.message && !err.message.toLocaleLowerCase().includes('failed to fetch')) {
-       throw err; 
+      throw err;
     }
-    
+
     throw new Error(`Failed to connect to the backend AI server at ${BACKEND_URL}. Please make sure the server is running on port 5001.`);
   }
 };

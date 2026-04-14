@@ -6,7 +6,10 @@ import {
 } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
 
-const API_BASE = 'http://localhost:5001';
+const API_BASE =
+  process.env.NODE_ENV === "production"
+    ? "https://auto-venture-website.onrender.com"
+    : "http://localhost:5001";
 
 // ── Tooltip component ────────────────────────────────────────────────────────
 const Tooltip = ({ text, children }) => {
@@ -42,7 +45,7 @@ const Tooltip = ({ text, children }) => {
 // ── Animated health dot ──────────────────────────────────────────────────────
 const HealthDot = ({ status }) => {
   const colors = { green: '#10b981', yellow: '#f59e0b', red: '#ef4444', grey: '#6b7280' };
-  const color  = colors[status] || colors.grey;
+  const color = colors[status] || colors.grey;
   return (
     <div style={{ position: 'relative', width: 10, height: 10, flexShrink: 0 }}>
       <div style={{ width: 10, height: 10, borderRadius: '50%', background: color }} />
@@ -58,7 +61,7 @@ const HealthDot = ({ status }) => {
 
 // ── Confidence bar ──────────────────────────────────────────────────────────
 const ConfidenceBar = ({ value }) => {
-  const color  = value >= 75 ? '#10b981' : value >= 50 ? '#f59e0b' : '#ef4444';
+  const color = value >= 75 ? '#10b981' : value >= 50 ? '#f59e0b' : '#ef4444';
   const status = value >= 75 ? 'green' : value >= 50 ? 'yellow' : 'red';
   return (
     <div>
@@ -108,14 +111,14 @@ const MetricCard = ({ icon, label, value, sub, health, tooltip, accent }) => (
 // ── Latency badge color ──────────────────────────────────────────────────────
 const latencyHealth = (ms) => {
   if (!ms) return 'grey';
-  if (ms < 1200)  return 'green';
-  if (ms < 3000)  return 'yellow';
+  if (ms < 1200) return 'green';
+  if (ms < 3000) return 'yellow';
   return 'red';
 };
-const latencyColor  = (ms) => {
+const latencyColor = (ms) => {
   if (!ms) return 'var(--text-tertiary)';
-  if (ms < 1200)  return '#10b981';
-  if (ms < 3000)  return '#f59e0b';
+  if (ms < 1200) return '#10b981';
+  if (ms < 3000) return '#f59e0b';
   return '#ef4444';
 };
 
@@ -123,25 +126,24 @@ const latencyColor  = (ms) => {
 const AIControlPanel = () => {
   const { currentAnalysis } = useAppContext();
 
-  const [logs,       setLogs]       = useState([]);
-  const [stats,      setStats]      = useState(null);
-  const [apiOnline,  setApiOnline]  = useState(null);  // null=checking, true/false
-  const [loading,    setLoading]    = useState(false);
-  const [lastFetch,  setLastFetch]  = useState(null);
+  const [logs, setLogs] = useState([]);
+  const [stats, setStats] = useState(null);
+  const [apiOnline, setApiOnline] = useState(null);  // null=checking, true/false
+  const [loading, setLoading] = useState(false);
+  const [lastFetch, setLastFetch] = useState(null);
 
   // ── Pull logs + stats from backend ──────────────────────────────────────
   const fetchMLOpsData = useCallback(async () => {
     setLoading(true);
     try {
-      const [logsRes, statsRes] = await Promise.all([
-        fetch(`${API_BASE}/api/logs?limit=10`),
-        fetch(`${API_BASE}/api/logs/stats`),
+      const [logsRes, healthRes] = await Promise.all([
+        fetch(`${API_BASE}/api/logs`),
+        fetch(`${API_BASE}/health`),
       ]);
-      const logsJson  = await logsRes.json();
-      const statsJson = await statsRes.json();
+      const logsJson = await logsRes.json();
+      const healthJson = await healthRes.json();
       setLogs(logsJson.logs || []);
-      setStats(statsJson);
-      setApiOnline(true);
+      setApiOnline(healthJson.status === 'OK');
     } catch {
       setApiOnline(false);
     } finally {
@@ -150,20 +152,24 @@ const AIControlPanel = () => {
     }
   }, []);
 
-  // Fetch on mount and whenever a new analysis is run
-  useEffect(() => { fetchMLOpsData(); }, [fetchMLOpsData, currentAnalysis]);
+  // Fetch on mount and whenever a new analysis is run, plus auto refresh every 5s
+  useEffect(() => {
+    fetchMLOpsData();
+    const interval = setInterval(fetchMLOpsData, 5000);
+    return () => clearInterval(interval);
+  }, [fetchMLOpsData, currentAnalysis]);
 
   // ── Derive MLOps values from currentAnalysis ─────────────────────────────
-  const meta         = currentAnalysis?.metadata || {};
-  const metrics      = currentAnalysis?.metrics  || {};
-  const engineUsed   = meta.engineUsed     || '—';
-  const modelName    = meta.modelName      || '—';
-  const promptVer    = meta.promptVersion  || '—';
-  const latencyMs    = meta.latencyMs      || null;
-  const confidence   = metrics.confidenceScore ?? null;
-  const filledFields = meta.filledFields   || [];
-  const isSimulated  = currentAnalysis?.isSimulated ?? null;
-  const timestamp    = currentAnalysis?.timestamp || '—';
+  const meta = currentAnalysis?.metadata || {};
+  const metrics = currentAnalysis?.metrics || {};
+  const engineUsed = meta.engineUsed || '—';
+  const modelName = meta.modelName || '—';
+  const promptVer = meta.promptVersion || '—';
+  const latencyMs = meta.latencyMs || null;
+  const confidence = metrics.confidenceScore ?? null;
+  const filledFields = meta.filledFields || [];
+  const isSimulated = currentAnalysis?.isSimulated ?? null;
+  const timestamp = currentAnalysis?.timestamp || '—';
 
   const validationStatus = filledFields.length === 0
     ? 'All fields valid'
@@ -174,12 +180,17 @@ const AIControlPanel = () => {
     : isSimulated ? 'yellow' : 'green';
 
   // ── DevOps stats ─────────────────────────────────────────────────────────
-  const totalReqs    = stats?.total || 0;
-  const successRate  = stats?.successRate || '—';
-  const avgLatency   = stats?.averageLatencyMs || null;
-  const breakdown    = stats?.engineBreakdown || { gemini: 0, groq: 0, simulation: 0 };
-  const errorCount   = totalReqs - (stats?.total ? Math.round(totalReqs * (parseInt(successRate) || 100) / 100) : totalReqs);
-  const errorRate    = totalReqs > 0 ? `${((errorCount / totalReqs) * 100).toFixed(1)}%` : '0%';
+  const totalReqs = logs.length;
+  const avgLatencyRaw = totalReqs > 0 ? logs.reduce((sum, log) => sum + (log.latency || 0), 0) / logs.length : 0;
+  const avgLatency = totalReqs > 0 ? Math.round(avgLatencyRaw) : null;
+  const errorCount = logs.filter(log => log.status === 'failure').length;
+  const errorRate = totalReqs > 0 ? `${((errorCount / totalReqs) * 100).toFixed(1)}%` : '0%';
+  const successRate = totalReqs > 0 ? `${(100 - (errorCount / totalReqs) * 100).toFixed(1)}%` : '100%';
+  const breakdown = {
+    gemini: logs.filter(l => (l.model || '').toLowerCase().includes('gemini') || (l.model || '').toLowerCase().includes('gpt')).length,
+    groq: logs.filter(l => (l.model || '').toLowerCase().includes('llama')).length,
+    simulation: logs.filter(l => (l.model || '').toLowerCase().includes('sim')).length
+  };
 
   return (
     <div style={{ width: '100%', minWidth: 0 }}>
@@ -307,8 +318,8 @@ const AIControlPanel = () => {
             <ConfidenceBar value={confidence} />
             <p style={{ margin: '0.6rem 0 0 0', fontSize: '0.72rem', color: 'var(--text-tertiary)', lineHeight: 1.5 }}>
               {confidence >= 75 ? '✅ High confidence — output is consistent and reliable for decision-making.'
-               : confidence >= 50 ? '⚠️ Moderate confidence — values are plausible but verify key projections.'
-               : '🔴 Low confidence — consider running with a larger budget input or a different industry.'}
+                : confidence >= 50 ? '⚠️ Moderate confidence — values are plausible but verify key projections.'
+                  : '🔴 Low confidence — consider running with a larger budget input or a different industry.'}
             </p>
           </div>
         ) : (
@@ -345,7 +356,7 @@ const AIControlPanel = () => {
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
               <thead>
                 <tr style={{ borderBottom: '1px solid var(--border-color)' }}>
-                  {['#', 'Status', 'Model', 'Latency', 'Engine Type', 'Idea / Field', 'Time'].map(h => (
+                  {['Status', 'Model', 'Latency', 'Time'].map(h => (
                     <th key={h} style={{ padding: '0.6rem 0.75rem', textAlign: 'left', color: 'var(--text-tertiary)', fontWeight: 600, fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>
                       {h}
                     </th>
@@ -354,16 +365,15 @@ const AIControlPanel = () => {
               </thead>
               <tbody>
                 {logs.map((log, i) => (
-                  <tr key={log.id} style={{ borderBottom: '1px solid var(--border-color)', transition: 'background 0.15s' }}
+                  <tr key={i} style={{ borderBottom: '1px solid var(--border-color)', transition: 'background 0.15s' }}
                     onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-tertiary)'}
                     onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                   >
-                    <td style={{ padding: '0.7rem 0.75rem', color: 'var(--text-tertiary)' }}>#{log.id}</td>
                     <td style={{ padding: '0.7rem 0.75rem' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                        <HealthDot status={log.success ? 'green' : 'red'} />
-                        <span style={{ color: log.success ? '#10b981' : '#ef4444', fontWeight: 600 }}>
-                          {log.success ? 'OK' : 'FAIL'}
+                        <HealthDot status={log.status === 'success' ? 'green' : 'red'} />
+                        <span style={{ color: log.status === 'success' ? '#10b981' : '#ef4444', fontWeight: 600 }}>
+                          {log.status === 'success' ? 'OK' : 'FAIL'}
                         </span>
                       </div>
                     </td>
@@ -371,21 +381,9 @@ const AIControlPanel = () => {
                       {log.model || '—'}
                     </td>
                     <td style={{ padding: '0.7rem 0.75rem' }}>
-                      <span style={{ color: latencyColor(log.latencyMs), fontWeight: 600 }}>
-                        {log.latencyMs ? `${log.latencyMs}ms` : '—'}
+                      <span style={{ color: latencyColor(log.latency), fontWeight: 600 }}>
+                        {log.latency ? `${log.latency}ms` : '—'}
                       </span>
-                    </td>
-                    <td style={{ padding: '0.7rem 0.75rem' }}>
-                      <span style={{
-                        background: log.isSimulated ? 'rgba(245,158,11,0.12)' : 'rgba(16,185,129,0.12)',
-                        color: log.isSimulated ? '#f59e0b' : '#10b981',
-                        padding: '0.15rem 0.5rem', borderRadius: '4px', fontSize: '0.7rem', fontWeight: 600
-                      }}>
-                        {log.isSimulated ? 'Simulation' : 'Live AI'}
-                      </span>
-                    </td>
-                    <td style={{ padding: '0.7rem 0.75rem', color: 'var(--text-secondary)', maxWidth: '180px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {log.idea ? `${log.idea.substring(0, 28)}${log.idea.length > 28 ? '…' : ''}` : <span style={{ color: 'var(--text-tertiary)' }}>{log.field || '—'}</span>}
                     </td>
                     <td style={{ padding: '0.7rem 0.75rem', color: 'var(--text-tertiary)', whiteSpace: 'nowrap' }}>
                       {log.timestamp ? new Date(log.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : '—'}
@@ -415,7 +413,7 @@ const AIControlPanel = () => {
           <MetricCard
             icon={<Wifi size={13} />}
             label="API Status"
-            value={apiOnline === null ? 'Checking…' : apiOnline ? 'Active ✓' : 'Offline ✗'}
+            value={apiOnline === null ? 'Checking…' : apiOnline ? 'Active' : 'Offline'}
             sub={apiOnline ? `${API_BASE}` : 'Server not reachable'}
             health={apiOnline === null ? 'grey' : apiOnline ? 'green' : 'red'}
             tooltip="Connection status of the NexusAI backend server"
@@ -459,9 +457,9 @@ const AIControlPanel = () => {
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem' }}>
             {[
-              { label: 'Gemini AI',         count: breakdown.gemini,     color: '#6366f1', icon: '🔵', tooltip: 'Primary AI — Google Gemini 2.0 Flash Lite' },
-              { label: 'Groq (Llama 3)',    count: breakdown.groq,       color: '#f59e0b', icon: '🟡', tooltip: 'Fallback AI — Llama 3 70B via Groq API' },
-              { label: 'Smart Simulation',  count: breakdown.simulation, color: '#10b981', icon: '🟠', tooltip: 'Rule-based fallback when both AI keys are unavailable/quota exceeded' },
+              { label: 'Gemini AI', count: breakdown.gemini, color: '#6366f1', icon: '🔵', tooltip: 'Primary AI — Google Gemini 2.0 Flash Lite' },
+              { label: 'Groq (Llama 3)', count: breakdown.groq, color: '#f59e0b', icon: '🟡', tooltip: 'Fallback AI — Llama 3 70B via Groq API' },
+              { label: 'Smart Simulation', count: breakdown.simulation, color: '#10b981', icon: '🟠', tooltip: 'Rule-based fallback when both AI keys are unavailable/quota exceeded' },
             ].map(e => {
               const pct = totalReqs > 0 ? Math.round((e.count / totalReqs) * 100) : 0;
               return (

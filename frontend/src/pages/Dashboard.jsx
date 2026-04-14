@@ -2,7 +2,7 @@ import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   BarChart, Bar, LineChart, Line, ScatterChart, Scatter, ZAxis, Cell
 } from 'recharts';
-import { ShieldAlert, TrendingUp, Zap, ArrowRight, Lightbulb, Activity, AlertTriangle } from 'lucide-react';
+import { ShieldAlert, TrendingUp, Zap, ArrowRight, Lightbulb, Activity, AlertTriangle, Sparkles } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
 
 const Dashboard = () => {

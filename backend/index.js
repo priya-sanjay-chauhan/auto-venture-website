@@ -3,8 +3,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import Groq from 'groq-sdk';
 import OpenAI from 'openai';
-
-dotenv.config();
+import axios from 'axios';dotenv.config();
 
 const app = express();
 app.use(cors({ origin: '*' }));
@@ -396,12 +395,58 @@ app.get('/', (req, res) => {
   `);
 });
 
-app.get('/api/logs', (req, res) => {
-  const limit = Math.min(parseInt(req.query.limit) || 50, 200);
+app.get('/health', (req, res) => {
   res.json({
-    total: llmLogs.length,
-    showing: Math.min(limit, llmLogs.length),
-    logs: [...llmLogs].reverse().slice(0, limit),
+    status: "OK",
+    uptime: process.uptime(),
+    timestamp: new Date().toISOString(),
+    service: "AI Backend"
+  });
+});
+
+app.get('/api/github-actions', async (req, res) => {
+  try {
+    const owner = "priya-sanjay-chauhan";
+    const repo = "auto-venture-website";
+
+    const response = await axios.get(
+      `https://api.github.com/repos/${owner}/${repo}/actions/runs`,
+      {
+        headers: {
+          Authorization: `Bearer ${process.env.GITHUB_TOKEN}`,
+          Accept: "application/vnd.github+json",
+        },
+      }
+    );
+
+    const runs = response.data.workflow_runs.slice(0, 5).map((run) => ({
+      name: run.name,
+      status: run.status,
+      conclusion: run.conclusion,
+      created_at: run.created_at,
+      updated_at: run.updated_at,
+      duration: (new Date(run.updated_at) - new Date(run.created_at)) / 1000,
+    }));
+
+    res.json({ runs });
+  } catch (error) {
+    console.error("GitHub API Error:", error.message);
+    res.status(500).json({
+      error: "Failed to fetch GitHub Actions data",
+    });
+  }
+});
+
+app.get('/api/logs', (req, res) => {
+  const latestLogs = [...llmLogs].reverse().slice(0, 20).map(l => ({
+    timestamp: l.timestamp,
+    model: l.modelName || l.model || 'Unknown',
+    latency: l.latencyMs || 0,
+    status: l.success ? 'success' : 'failure'
+  }));
+  res.json({
+    success: true,
+    logs: latestLogs,
   });
 });
 
