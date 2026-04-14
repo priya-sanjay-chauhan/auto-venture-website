@@ -15,7 +15,7 @@ app.use((req, res, next) => {
   next();
 });
 
-const groq  = new Groq({ apiKey: process.env.GROQ_API_KEY || '' });
+const groq = new Groq({ apiKey: process.env.GROQ_API_KEY || '' });
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY || '' });
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -30,20 +30,20 @@ const llmLogs = [];
 
 const logLLMRequest = ({ inputs, model, modelName, success, latencyMs, error, engine }) => {
   llmLogs.push({
-    id:          llmLogs.length + 1,
-    timestamp:   new Date().toISOString(),
+    id: llmLogs.length + 1,
+    timestamp: new Date().toISOString(),
     promptVersion: PROMPT_VERSION,
     model,      // e.g. 'LLM'
     engine,     // 'gemini' | 'groq' | 'openai'
     modelName,  // e.g. 'gemini-1.5-flash-latest'
-    idea:        (inputs.idea || '').substring(0, 60),
-    field:       inputs.field  || 'N/A',
-    budget:      inputs.budget || 'N/A',
-    currency:    inputs.currency || 'USD',
+    idea: (inputs.idea || '').substring(0, 60),
+    field: inputs.field || 'N/A',
+    budget: inputs.budget || 'N/A',
+    currency: inputs.currency || 'USD',
     success,
     isSimulated: false,
     latencyMs,
-    error:       error || null,
+    error: error || null,
   });
   if (llmLogs.length > 500) llmLogs.shift();
 };
@@ -59,7 +59,7 @@ const isValidKey = (key) =>
 // ════════════════════════════════════════════════════════════════════════════
 const buildPrompt = (inputs) => {
   const { idea, audience, timeline, budget, field, businessType, productType, model = 'LLM' } = inputs;
-  
+
   let modelPersona = "";
   if (model === "LLM") {
     modelPersona = `
@@ -128,12 +128,12 @@ Return ONLY a valid JSON object (no markdown) with exactly these fields:
 const calculateLocalXGBoost = (inputs) => {
   const { budget, field, businessType } = inputs;
   const t0 = Date.now();
-  
+
   // Weights based on field and budget
   const budgetNum = parseInt(String(budget).replace(/[^0-9]/g, '')) || 50000;
   const fieldMultipliers = { 'Technology': 1.2, 'Healthcare': 1.1, 'Finance': 1.3, 'Retail': 0.9, 'Education': 1.0 };
   const multiplier = fieldMultipliers[field] || 1.0;
-  
+
   // Logic: Higher budget in complex fields increases success but also increases risk.
   const baseSuccess = 65 + (Math.min(budgetNum / 10000, 25) * multiplier);
   const baseRisk = 20 + (Math.min(budgetNum / 5000, 40) / multiplier);
@@ -162,11 +162,11 @@ const calculateLocalXGBoost = (inputs) => {
 const calculateLocalLSTM = (inputs) => {
   const { timeline, field } = inputs;
   const t0 = Date.now();
-  
+
   const timelineNum = parseInt(String(timeline).replace(/[^0-9]/g, '')) || 12;
   const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
   const startMonth = new Date().getMonth();
-  
+
   const demandData = Array.from({ length: 6 }, (_, i) => {
     const monthIndex = (startMonth + i) % 12;
     // Seasonal logic
@@ -178,7 +178,7 @@ const calculateLocalLSTM = (inputs) => {
   });
 
   const revenueData = Array.from({ length: 5 }, (_, i) => ({
-    name: `Q${i+1}`,
+    name: `Q${i + 1}`,
     projected: Math.round(10000 * Math.pow(1.5, i) * (timelineNum / 12))
   }));
 
@@ -214,23 +214,23 @@ const calculateLocalHybrid = (xgboost, lstm, inputs) => {
 // ════════════════════════════════════════════════════════════════════════════
 
 const callGroq = async (prompt) => {
-  const t0         = Date.now();
+  const t0 = Date.now();
   const completion = await groq.chat.completions.create({
-    model:    'llama-3.3-70b-versatile',
+    model: 'llama-3.3-70b-versatile',
     messages: [
       { role: 'system', content: 'You are a startup analysis expert. Always respond with valid JSON only — no markdown, no explanation.' },
-      { role: 'user',   content: prompt },
+      { role: 'user', content: prompt },
     ],
     temperature: 0.7,
-    max_tokens:  3000,
+    max_tokens: 3000,
   });
-  const text  = completion.choices[0]?.message?.content || '';
+  const text = completion.choices[0]?.message?.content || '';
   const match = text.match(/\{[\s\S]*\}/);
   if (!match) throw new Error('Groq returned invalid JSON structure');
-  return { 
-    data: JSON.parse(match[0]), 
-    latency: Date.now() - t0, 
-    modelName: 'llama-3.3-70b-versatile' 
+  return {
+    data: JSON.parse(match[0]),
+    latency: Date.now() - t0,
+    modelName: 'llama-3.3-70b-versatile'
   };
 };
 
@@ -256,7 +256,7 @@ const callOpenAI = async (prompt) => {
 
 const generateMockResponse = (inputs) => {
   const model = inputs.model || 'LLM';
-  const idea  = inputs.idea || 'Your Startup';
+  const idea = inputs.idea || 'Your Startup';
   console.log(`🔮 [T3] Generating High-Fidelity Simulation Result (${model} Mode Fallback)...`);
 
   const xg = calculateLocalXGBoost(inputs);
@@ -399,24 +399,24 @@ app.get('/', (req, res) => {
 app.get('/api/logs', (req, res) => {
   const limit = Math.min(parseInt(req.query.limit) || 50, 200);
   res.json({
-    total:  llmLogs.length,
+    total: llmLogs.length,
     showing: Math.min(limit, llmLogs.length),
-    logs:   [...llmLogs].reverse().slice(0, limit),
+    logs: [...llmLogs].reverse().slice(0, limit),
   });
 });
 
 app.get('/api/logs/stats', (req, res) => {
-  const total     = llmLogs.length;
+  const total = llmLogs.length;
   const successes = llmLogs.filter(l => l.success).length;
-  const groqHits  = llmLogs.filter(l => l.engine === 'groq' && l.success).length;
-  const openaiHits= llmLogs.filter(l => l.engine === 'openai' && l.success).length;
-  
+  const groqHits = llmLogs.filter(l => l.engine === 'groq' && l.success).length;
+  const openaiHits = llmLogs.filter(l => l.engine === 'openai' && l.success).length;
+
   const latencies = llmLogs.filter(l => l.latencyMs > 0).map(l => l.latencyMs);
   const avgLatency = latencies.length > 0 ? latencies.reduce((s, l) => s + l, 0) / latencies.length : 0;
 
   res.json({
     total,
-    successRate:    total ? `${Math.round((successes / total) * 100)}%` : 'N/A',
+    successRate: total ? `${Math.round((successes / total) * 100)}%` : 'N/A',
     engineBreakdown: { groq: groqHits, openai: openaiHits },
     averageLatencyMs: Math.round(avgLatency),
     promptVersion: PROMPT_VERSION,
@@ -431,8 +431,8 @@ app.get('/api/logs/stats', (req, res) => {
 // ════════════════════════════════════════════════════════════════════════════
 app.post('/api/analyze', async (req, res) => {
   const { compareModels } = req.body;
-  const prompt            = buildPrompt(req.body);
-  const requestStart      = Date.now();
+  const prompt = buildPrompt(req.body);
+  const requestStart = Date.now();
 
   try {
     // 1. RUN LOCAL ENGINES (Instant)
@@ -446,19 +446,19 @@ app.post('/api/analyze', async (req, res) => {
 
     // 3. MERGE RESULTS (Hybrid Mapping)
     const hybridResult = {
-      id:           Date.now().toString(),
-      timestamp:    new Date().toLocaleTimeString(),
-      inputs:       req.body,
-      isHybrid:     true,
-      isSimulated:  llmRes.isSimulated || false,
-      
+      id: Date.now().toString(),
+      timestamp: new Date().toLocaleTimeString(),
+      inputs: req.body,
+      isHybrid: true,
+      isSimulated: llmRes.isSimulated || false,
+
       // KPI CARDS -> XGBOOST
       metrics: {
         successScore: localXG.successScore,
-        growthScore:  localXG.growthScore,
-        riskScore:    localXG.riskScore,
+        growthScore: localXG.growthScore,
+        riskScore: localXG.riskScore,
         // Graphs -> LSTM
-        revenueData:  localLS.revenueData,
+        revenueData: localLS.revenueData,
         demandForecastData: localLS.demandForecastData,
         // Graphs -> HYBRID
         growthCurveData: localHY.growthCurveData,
@@ -496,21 +496,21 @@ app.post('/api/analyze', async (req, res) => {
         success: true,
         modelName: localLS.modelName
       },
-      
+
       metadata: {
-        promptVersion:   PROMPT_VERSION,
-        totalLatencyMs:  Date.now() - requestStart,
+        promptVersion: PROMPT_VERSION,
+        totalLatencyMs: Date.now() - requestStart,
       },
     };
 
     if (compareModels) {
-       // Existing comparison logic but using fresh hybrid data
-       hybridResult.isComparison = true;
-       hybridResult.comparison = [
-         { name: 'LLM', accuracy: '92%', latency: `${llmRes.latency}ms`, cost: '$0.02', prob: 0.95 },
-         { name: 'XGBoost', accuracy: '88%', latency: `${localXG.latency}ms`, cost: '$0.00', prob: 0.88 },
-         { name: 'LSTM', accuracy: '85%', latency: `${localLS.latency}ms`, cost: '$0.00', prob: 0.85 }
-       ];
+      // Existing comparison logic but using fresh hybrid data
+      hybridResult.isComparison = true;
+      hybridResult.comparison = [
+        { name: 'LLM', accuracy: '92%', latency: `${llmRes.latency}ms`, cost: '$0.02', prob: 0.95 },
+        { name: 'XGBoost', accuracy: '88%', latency: `${localXG.latency}ms`, cost: '$0.00', prob: 0.88 },
+        { name: 'LSTM', accuracy: '85%', latency: `${localLS.latency}ms`, cost: '$0.00', prob: 0.85 }
+      ];
     }
 
     return res.json(hybridResult);
@@ -524,10 +524,10 @@ app.post('/api/analyze', async (req, res) => {
 // ════════════════════════════════════════════════════════════════════════════
 const PORT = process.env.PORT || 5001;
 app.listen(PORT, '0.0.0.0', () => {
-  console.log(`\n🚀 NexusAI Backend — Hybrid Intelligence Pipeline`);
+  console.log(`\n NexusAI Backend — Hybrid Intelligence Pipeline`);
   console.log(`   Server:         http://localhost:${PORT}`);
   console.log(`   Prompt Version: ${PROMPT_VERSION}`);
 
-  console.log(`   Groq Key:       ${isValidKey(process.env.GROQ_API_KEY)   ? '✅ Active' : '❌ Missing'}`);
+  console.log(`   Groq Key:       ${isValidKey(process.env.GROQ_API_KEY) ? '✅ Active' : '❌ Missing'}`);
   console.log(`   OpenAI Key:     ${isValidKey(process.env.OPENAI_API_KEY) ? '✅ Active' : '❌ Missing'}\n`);
 });
