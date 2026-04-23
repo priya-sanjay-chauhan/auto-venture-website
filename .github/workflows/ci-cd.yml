@@ -48,10 +48,10 @@ jobs:
       - name: Verify DVC Metadata
         run: |
           if [ ! -f backend/models/model_v1.json.dvc ]; then
-            echo "❌ DVC metadata file missing!"
+            echo " DVC metadata file missing!"
             exit 1
           fi
-          echo "✅ DVC metadata verified."
+          echo " DVC metadata verified."
 
       # 4. Build the Docker image from ./backend/Dockerfile
       - name: Build Backend Docker Image
@@ -73,12 +73,12 @@ jobs:
           echo "⏳ Waiting ${{ env.STARTUP_WAIT }}s for server to start..."
           sleep ${{ env.STARTUP_WAIT }}
 
-          echo "🔍 Probing ${{ env.HEALTH_ENDPOINT }} (max ${{ env.MAX_RETRIES }} retries, ${{ env.RETRY_INTERVAL }}s apart)..."
+          echo " Probing ${{ env.HEALTH_ENDPOINT }} (max ${{ env.MAX_RETRIES }} retries, ${{ env.RETRY_INTERVAL }}s apart)..."
           RETRIES=0
           until curl --silent --fail --max-time 5 "${{ env.HEALTH_ENDPOINT }}"; do
             RETRIES=$((RETRIES + 1))
             if [ "$RETRIES" -ge "${{ env.MAX_RETRIES }}" ]; then
-              echo "❌ Health-check failed after ${{ env.MAX_RETRIES }} attempts."
+              echo " Health-check failed after ${{ env.MAX_RETRIES }} attempts."
               echo "── Container logs ──────────────────────────────────────"
               docker logs ${{ env.CONTAINER_NAME }}
               echo "────────────────────────────────────────────────────────"
@@ -87,7 +87,7 @@ jobs:
             echo "  Attempt $RETRIES/${{ env.MAX_RETRIES }} — retrying in ${{ env.RETRY_INTERVAL }}s..."
             sleep ${{ env.RETRY_INTERVAL }}
           done
-          echo "✅ Backend healthy."
+          echo " Backend healthy."
 
       # 7. Cleanup — always runs so stale containers never block re-runs
       - name: Cleanup Docker Container
@@ -121,6 +121,6 @@ jobs:
     steps:
       - name: Deploy Message
         run: |
-          echo "✅ All checks passed."
-          echo "🚀 Render will auto-deploy the backend from the main branch."
-          echo "🌐 Vercel will auto-deploy the frontend from the main branch."
+          echo " All checks passed."
+          echo " Render will auto-deploy the backend from the main branch."
+          echo " Vercel will auto-deploy the frontend from the main branch."
